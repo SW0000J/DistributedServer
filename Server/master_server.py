@@ -80,8 +80,3 @@ class MasterServer:
 
             print("New connection ID " + str(EdgeServerList[len(EdgeServerList) - 1]))
             EdgeServerCount += 1
-
-
-
-masterServer = MasterServer("127.0.0.1", 5578)
-masterServer.StartServer()

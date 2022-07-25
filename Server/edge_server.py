@@ -46,64 +46,64 @@ class AppendClient(threading.Thread):
                         client.mSocket.sendall(str.encode("\nID " + str(self.mId) + ": " + str(data.decode("utf-8") + "\n")))
 
     
-    class EdgeServer:
+class EdgeServer:
+    """
+    Edge in distributed server model
+    """
+    def __init__(self, masterIp, masterPort, clientIp, clientPort):
         """
-        Edge in distributed server model
+        Initialize Edge Server
         """
-        def __init__(self, masterIp, masterPort, clientIp, clientPort):
-            """
-            Initialize Edge Server
-            """
-            self.mMasterIp = masterIp
-            self.mMasterPort = masterPort
-            self.mClientIp = clientIp
-            self.mClientPort = clientPort
+        self.mMasterIp = masterIp
+        self.mMasterPort = masterPort
+        self.mClientIp = clientIp
+        self.mClientPort = clientPort
 
         
-        def StartServer(self):
-            """
-            Make Socket between edge <-> client
-            """
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.bind((self.mClientIp, self.mClientPort))
-                sock.listen(5)
+    def StartServer(self):
+        """
+        Make Socket between edge <-> client
+        """
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.bind((self.mClientIp, self.mClientPort))
+            sock.listen(5)
 
-                receiveThread = threading.Thread(target=self.MakeConnections, args=(sock, ))
-                receiveThread.start()
+            receiveThread = threading.Thread(target=self.MakeConnections, args=(sock, ))
+            receiveThread.start()
 
-            except:
-                print("Cannot run the server")
-                sys.exit(0)
+        except:
+            print("Cannot run the server")
+            sys.exit(0)
 
 
-        def MakeConnections(self, socket):
-            """
-            Make connection between edge <-> client
-            """
+    def MakeConnections(self, socket):
+        """
+        Make connection between edge <-> client
+        """
+        while True:
+            global ClientCount
+
+            sock, address = socket.accept()
+            ClientList.append(AppendClient(sock, address, ClientCount, "Name", True))
+            ClientList[len(ClientList) - 1].start()
+
+            print("New connection ID " + str(ClientList[len(ClientList) - 1]))
+            ClientCount += 1
+
+
+    def StartClient(self):
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect((self.mMasterIp, self.mMasterPort))
+
+            receiveThread = threading.Thread(target=Receive, args=(sock, True))
+            receiveThread.start()
+
             while True:
-                global ClientCount
+                message = input()
+                sock.sendall(str.encode(message))
 
-                sock, address = socket.accept()
-                ClientList.append(AppendClient(sock, address, ClientCount, "Name", True))
-                ClientList[len(ClientList) - 1].start()
-
-                print("New connection ID " + str(ClientList[len(ClientList) - 1]))
-                ClientCount += 1
-
-
-        def StartClient(self):
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.connect((self.mMasterIp, self.mMasterPort))
-
-                receiveThread = threading.Thread(target=Receive, args=(sock, True))
-                receiveThread.start()
-
-                while True:
-                    message = input()
-                    sock.sendall(str.encode(message))
-
-            except:
-                print("Cannot connect to the masterserver")
-                sys.exit(0)
+        except:
+            print("Cannot connect to the masterserver")
+            sys.exit(0)
