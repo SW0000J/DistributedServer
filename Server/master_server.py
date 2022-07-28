@@ -2,6 +2,7 @@ import threading
 import socket
 import os
 import sys
+import json
 
 
 EdgeServerList = []
@@ -37,11 +38,11 @@ class AppendEdge(threading.Thread):
                 break
 
             if data != "":
-                print("ID " + str(self.mId) + ": " + str(data.decode("utf-8")))
+                print("[Master]" + str(self.mId) + ": " + str(data.decode("utf-8")))
+                print(EdgeServerCount)
 
                 for edge in EdgeServerList:
-                    if edge.mId != self.mId:
-                        edge.mSocket.sendall(str.encode("\nID " + str(self.mId) + ": " + str(data.decode("utf-8") + "\n")))
+                    edge.mSocket.sendall(str.encode("\n[Master]" + str(self.mId) + "/" + str(data.decode("utf-8") + "\n")))
 
 
 class MasterServer:
@@ -55,6 +56,11 @@ class MasterServer:
         self.mIp = ip
         self.mPort = port
 
+
+    def SetEdgeCount(self):
+        with open("./Settings/config.json", "w") as f:
+            json.dump({"EdgeCount": EdgeServerCount}, f)
+
     
     def StartServer(self):
         try:
@@ -64,6 +70,8 @@ class MasterServer:
 
             receiveThread = threading.Thread(target=self.MakeConnections, args=(sock, ))
             receiveThread.start()
+
+            self.SetEdgeCount()
 
         except:
             print("Cannot run the server")
@@ -80,3 +88,8 @@ class MasterServer:
 
             print("New connection ID " + str(EdgeServerList[len(EdgeServerList) - 1]))
             EdgeServerCount += 1
+
+
+if __name__ == "__main__":
+    master = MasterServer("127.0.0.1", 5578)
+    master.StartServer()
